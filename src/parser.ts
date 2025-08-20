@@ -14,16 +14,16 @@ interface Medicine {
   product_type: string;
   is_basic_drug: string | null;
   is_stable_supply_drug: string | null;
-  listing_date: Date | null; // 元データに文字列が入るためstring
+  listing_date: string | null; 
   shipping_status: string | null;
-  status_update_date: Date | null;
+  status_update_date: string | null;
   reason: string | null;
   resolution_estimate: string | null;
   resolution_or_discontinuation_date: string | null;
   shipment_volume_status: string | null;
   shipment_volume_improvement_date: string | null;
   shipment_volume_improvement_amount: string | null;
-  other_info_update_date: Date | null;
+  other_info_update_date: string | null;
   is_new: string | null;
 }
 
@@ -33,22 +33,26 @@ interface Medicine {
  * @param dateStr 変換したい文字列
  * @returns Dateオブジェクト、または null
  */
-function parseDateOrNull(dateStr: any): Date | null {
-  if (!dateStr) return null;
-
-  const str = String(dateStr).trim();
-  if (["未定", "-", "薬価基準未収載"].includes(str) || str === '') {
-    return null;
-  }
+function parseDateOrNull(dateStr: any): string | null { // ★戻り値の型を string に変更
+    if (!dateStr) return null;
   
-  const date = new Date(str);
-  if (isNaN(date.getTime())) {
-    return null;
+    const str = String(dateStr).trim();
+    if (["未定", "-", "薬価基準未収載"].includes(str) || str === '') {
+      return null;
+    }
+    
+    const date = new Date(str);
+    if (isNaN(date.getTime())) {
+      return null;
+    }
+    
+    // ★Spannerが要求する "YYYY-MM-DD" 形式の文字列を生成して返す
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // 月は0から始まるため+1
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
   }
-  
-  // SpannerはDateオブジェクトを直接受け取れるので、オブジェクトを返す
-  return date;
-}
 
 /**
  * ReadableStreamをBufferに変換するヘルパー関数
