@@ -1,8 +1,6 @@
 import { Readable } from 'stream';
 import * as xlsx from 'xlsx';
 
-// DBのテーブル定義に合わせたデータ型（Interface）を定義
-// これにより、コード内でtypoなどのミスを防げる
 interface Medicine {
   drug_category: string;
   therapeutic_category: string;
@@ -77,9 +75,9 @@ export async function parseAndFilterData(stream: Readable): Promise<Omit<Medicin
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
 
-  // ExcelシートをJSONに変換（ヘッダーは実際のExcelに合わせて調整が必要）
-  // 注：実際のExcelファイルのヘッダー名と完全に一致させる必要があります
-  const jsonData: any[] = xlsx.utils.sheet_to_json(sheet, { range: 1 });
+  // ExcelシートをJSONに変換
+  const jsonData: any[] = xlsx.utils.sheet_to_json(sheet, { range: 1, defval: null }); 
+  //defval: nullはヘッダー以下の行に数千行先までデータがない場合に、その列自体を無視されないようにするために付けている
 
   if (jsonData.length > 0) {
     console.log('Excelから読み込んだ最初の行のキー（ヘッダー名）:', Object.keys(jsonData[0]));

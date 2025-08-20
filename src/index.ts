@@ -1,7 +1,7 @@
 import { createReadStream } from 'fs';
 import { Readable } from 'stream';
 import { parseAndFilterData } from './parser';
-import { upsertDataAndCleanUp } from './spanner';
+import { upsertDataAndCleanUp } from './spanner'; 
 
 // --- メイン処理 ---
 async function main() {
