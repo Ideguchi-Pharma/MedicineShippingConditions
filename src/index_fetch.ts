@@ -51,7 +51,7 @@ async function run_batch_process() {
 // --- スケジュール設定 ---
 // '0 8 * * *' は「毎日 朝8時0分」を意味するcron形式のスケジュール(分　時　日　月　曜日)
 console.log('バッチ処理のスケジュールを設定しました。毎日AM9:30に実行されます...');
-cron.schedule('20 16 * * *', () => {
+cron.schedule('30 9 * * *', () => {
   console.log('スケジュールされたタスクを実行します...');
   run_batch_process();
 }, {
