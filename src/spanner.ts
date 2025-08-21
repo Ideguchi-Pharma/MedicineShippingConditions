@@ -16,36 +16,35 @@ const database = instance.database(databaseId);
  * 解析済みデータをSpannerに投入し、古いデータを削除する（洗い替え処理）
  * @param products 解析済みの製品データ配列 (parser.tsからの出力)
  */
-export async function upsertDataAndCleanUp(products: any[]): Promise<void> {
+export async function upsert_data_and_clean_up(products: any[]): Promise<void> {
   // 1. 処理の開始時刻を一度だけ取得し、変数に保存する
-  const executionTime = new Date();
-  console.log(`[SPANNAR] 処理タイムスタンプ: ${executionTime.toISOString()}`);
-
+  const execution_time = new Date();
+  console.log(`[SPANNAR] 処理タイムスタンプ: ${execution_time.toISOString()}`);
   // 2. 解析した全データに、取得した単一のタイムスタンプを`updated_at`として付与する
-  const recordsToInsert = products.map(p => ({
+  const records_to_insert = products.map(p => ({
     ...p,
-    updated_at: executionTime, // テーブル定義のカラム名に合わせる
+    updated_at: execution_time, // テーブル定義のカラム名に合わせる
   }));
   
   // 3. データをSpannerに投入する
-  const productTable = database.table('MedicineShippingConditions');
+  const product_table = database.table('MedicineShippingConditions');
   try {
-    console.log(`[SPANNAR] ${recordsToInsert.length}件のデータを投入します...`);
+    console.log(`[SPANNAR] ${records_to_insert.length}件のデータを投入します...`);
     // Spannerは一度に大量のデータを投入できるので、配列をそのまま渡す
-    await productTable.replace(recordsToInsert);
+    await product_table.replace(records_to_insert); //replace:もし同じ主キー（YJコード）のデータがあれば新しいデータで丸ごと上書きし、なければ新規データとして追加する
     console.log('[SPANNAR] データの投入が完了しました。');
 
-    // 4. 処理開始時のタイムスタンプより古いデータを削除する
+    // 4. 処理開始時のタイムスタンプより古いデータを削除する(万が一、古いデータが残っていた場合の処理)
     console.log('[SPANNAR] 古いデータのクリーンアップを開始します...');
-    const [rowCount] = await database.runTransactionAsync(async (transaction) => {
-      const affectedRows = await transaction.runUpdate({
-        sql: `DELETE FROM MedicineShippingConditions WHERE updated_at < @executionTime`,
-        params: { executionTime: executionTime },
+    const [row_count] = await database.runTransactionAsync(async (transaction) => { //runTransactionAsync:この一連の削除処理中にエラーが発生したら全ての削除処理をキャンセルする
+      const affected_rows = await transaction.runUpdate({
+        sql: `DELETE FROM MedicineShippingConditions WHERE updated_at < @execution_time`, //SQL命令文：replaceで投入したデータのupdate_atより古いデータをデータベースから削除すしてください
+        params: { execution_time: execution_time }, //@とparamsはセット。@で空欄を作り、paramsで内容を入れる。(サイバー攻撃を防ぐため)
       });
-      await transaction.commit();
-      return affectedRows;
+      await transaction.commit(); //最終的な実行ボタン
+      return affected_rows; //削除した件数をrow_countに返す
     });
-    console.log(`[SPANNAR] ${rowCount}件の古いデータを削除しました。`);
+    console.log(`[SPANNAR] ${row_count}件の古いデータを削除しました。`);
 
   } catch (err) {
     console.error('[SPANNAR] エラーが発生しました:', err);
