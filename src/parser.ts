@@ -25,6 +25,32 @@ interface medicine {
   is_new: string | null;
 }
 
+function translate_row_to_medicine(row: any): Omit<medicine, 'updated_at'> {
+    return {
+      drug_category: row['①薬剤区分'],
+      therapeutic_category: row['②薬効分類\r\n（保険薬収載時点の薬効分類を記載）'],
+      ingredient_name: row['③成分名'],
+      package_unit: row['④規格単位\r\n※全角'] || null,
+      yj_code: row['⑤YJコード'],
+      product_name: row['⑥品名\r\n（承認書に記載の正式名称）\r\n※全角'],
+      manufacturer: row['⑦製造販売業者名'],
+      product_type: row['⑧製品区分'],
+      is_basic_drug: row['⑨基礎的\r\n医薬品'] || null,
+      is_stable_supply_drug: row['⑩安定確保医薬品'] || null,
+      listing_date: parse_date_or_null(row['⑪薬価収載年月日']),
+      shipping_status: row['⑫製造販売業者の\r\n「出荷対応」の状況'] || null,
+      status_update_date: parse_date_or_null(row['⑬当該品目の⑫の情報を更新した日（本項目を報告内容として追加した令和7年5月13日以降に⑫の情報を更新した品目についてのみ記載）']),
+      reason: row['⑭限定出荷/供給停止の理由\r\n'] || null,
+      resolution_estimate: row['⑮限定出荷の解除見込み／\r\n供給停止の解消見込み'] || null,
+      resolution_or_discontinuation_date: row['⑯限定出荷の解除見込み／\r\n供給停止の解消見込み／\r\n販売中止品の在庫消尽時期'] || null,
+      shipment_volume_status: row['⑰製造販売業者の\r\n「出荷量」の現在の状況'] || null,
+      shipment_volume_improvement_date: row['⑱製造販売業者の「出荷量」の改善（増加）見込み時期'] || null,
+      shipment_volume_improvement_amount: row['⑲⑱を任意選択した場合の「出荷量」の改善（増加）見込み量'] || null,
+      other_info_update_date: parse_date_or_null(row['⑳当該品目の⑫以外の情報を更新した日']),
+      is_new: row['更新有無（更新有りの場合、Newと表示）'] || null,
+    };
+  }
+
 /**
  * 文字列を'YYYY-MM-DD'形式の日付オブジェクトに変換する。
  * 空白や日付として不正な文字列の場合は null を返す。
@@ -99,49 +125,15 @@ export async function parse_and_filter_data(stream: Readable): Promise<Omit<medi
   //  console.log('Excelから読み込んだ最初の行のキー（ヘッダー名）:', Object.keys(json_data[0])); //ヘッダー名を全てコンソールに表示（全カラムが読み込まれているか確認するため）
   //}
 
-  const translated_medicines = json_data
-    .map(row => { //json_dataから1行ずつデータを取り出す。 Excelのヘッダー名（日本語）を、DBの列名（英語）に変換する(データベースのテーブル定義と合致させるため)
-      return {
-        drug_category: row['①薬剤区分'],
-        therapeutic_category: row['②薬効分類\r\n（保険薬収載時点の薬効分類を記載）'],
-        ingredient_name: row['③成分名'],
-        package_unit: row['④規格単位\r\n※全角'] || null,
-        yj_code: row['⑤YJコード'],
-        product_name: row['⑥品名\r\n（承認書に記載の正式名称）\r\n※全角'],
-        manufacturer: row['⑦製造販売業者名'],
-        product_type: row['⑧製品区分'],
-        is_basic_drug: row['⑨基礎的\r\n医薬品'] || null,
-        is_stable_supply_drug: row['⑩安定確保医薬品'] || null,
-        listing_date: parse_date_or_null(row['⑪薬価収載年月日']), 
-        shipping_status: row['⑫製造販売業者の\r\n「出荷対応」の状況'] || null,
-        status_update_date: parse_date_or_null(row['⑬当該品目の⑫の情報を更新した日（本項目を報告内容として追加した令和7年5月13日以降に⑫の情報を更新した品目についてのみ記載）']),
-        reason: row['⑭限定出荷/供給停止の理由\r\n'] || null,
-        resolution_estimate: row['⑮限定出荷の解除見込み／\r\n供給停止の解消見込み'] || null,
-        resolution_or_discontinuation_date: row['⑯限定出荷の解除見込み／\r\n供給停止の解消見込み／\r\n販売中止品の在庫消尽時期'] || null,
-        shipment_volume_status: row['⑰製造販売業者の\r\n「出荷量」の現在の状況'] || null,
-        shipment_volume_improvement_date: row['⑱製造販売業者の「出荷量」の改善（増加）見込み時期'] || null,
-        shipment_volume_improvement_amount: row['⑲⑱を任意選択した場合の「出荷量」の改善（増加）見込み量'] || null,
-        other_info_update_date: parse_date_or_null(row['⑳当該品目の⑫以外の情報を更新した日']),
-        is_new: row['更新有無（更新有りの場合、Newと表示）'] || null,
-      };
-    })
+    const translated_medicines = json_data.map(translate_row_to_medicine);
+    
+    // 1. まず、全データからYJコードのリストだけを抜き出す
+    const yj_codes = translated_medicines.map(med => med.yj_code).filter(Boolean);
+    // 2. Setの「重複を許さない」性質を使い、ユニークな件数を一瞬で計算
+    const unique_yj_code_count = new Set(yj_codes).size;
+    // 3. 元の総数からユニークな件数を引いて、重複件数を算出
+    const duplicate_count = yj_codes.length - unique_yj_code_count;
 
-    const seen_yj_codes = new Set<string>();
-    let duplicate_count = 0;
-    // 全データをループして重複を数える
-    for (const medicine of translated_medicines) {
-      // YJコードが存在する場合のみチェック
-      if (medicine.yj_code && String(medicine.yj_code).trim() !== '') {
-        const yj_code = String(medicine.yj_code).trim();
-        if (seen_yj_codes.has(yj_code)) {
-          // すでにSetにあれば、それは重複
-          duplicate_count++;
-        } else {
-          // Setになければ、新しく追加
-          seen_yj_codes.add(yj_code);
-        }
-      }
-    }
     if (duplicate_count > 0) { // ログに記録する
         console.log(`[PARSER] 重複チェック: ${duplicate_count}件の重複したYJコードが見つかりました。(DB投入時に後着優先で上書きされます)`);
     } else {

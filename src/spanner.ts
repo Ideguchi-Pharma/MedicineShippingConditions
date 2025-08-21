@@ -5,6 +5,7 @@ import { Spanner } from '@google-cloud/spanner';
 const projectId = 'test-project';
 const instanceId = 'test-instance';
 const databaseId = 'test-database';
+const TABLE_NAME = 'MedicineShippingConditions'; //テーブル名を指定
 // --------------------------------
 
 // Spannerクライアントを初期化
@@ -27,7 +28,7 @@ export async function upsert_data_and_clean_up(products: any[]): Promise<void> {
   }));
   
   // 3. データをSpannerに投入する
-  const product_table = database.table('MedicineShippingConditions');
+  const product_table = database.table(TABLE_NAME);
   try {
     console.log(`[SPANNAR] ${records_to_insert.length}件のデータを投入します...`);
     // Spannerは一度に大量のデータを投入できるので、配列をそのまま渡す

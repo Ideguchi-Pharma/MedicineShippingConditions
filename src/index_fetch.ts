@@ -4,6 +4,13 @@ import cron from 'node-cron'; //プログラムの実行スケジュールを指
 import { parse_and_filter_data } from './parser'; //Excel解析の結果を呼び出す(parser.ts)
 import { upsert_data_and_clean_up } from './spanner';  //データベース接続のツール(spanner.ts)
 
+// ---設定値---
+const CRON_SCHEDULE_1 = '55 8 * * *'; // '30 9 * * *' は「毎日 朝9時30分」を意味するcron形式のスケジュール(分　時　日　月　曜日)
+const CRON_SCHEDULE_2 = '1 9 * * *';
+const SCHEDULE = 'AM8:55,AM9:1';
+const TIME_ZONE = 'Asia/Tokyo'; //日本時間に設定
+const BASE_URL = 'https://www.mhlw.go.jp/content/10800000/';
+
 // --- メイン処理 ---
 async function run_batch_process() {
   console.log(`--- ${new Date().toLocaleString()} バッチ処理を開始します ---`);
@@ -17,7 +24,7 @@ async function run_batch_process() {
     const day = today.getDate().toString().padStart(2, '0'); //Dateが1桁の場合、先頭に0を追加
 
     const file_name = `${year}${month}${day}iyakuhinkyoukyu.xlsx` //動的なExcelファイル名を指定
-    const download_url = `https://www.mhlw.go.jp/content/10800000/${file_name}`; // プロジェクトルートのExcelファイルを指定
+    const download_url = `${BASE_URL}${file_name}`; // プロジェクトルートのExcelファイルを指定
     console.log(`[MAIN] ファイルをダウンロードします: ${download_url}`);
     const responce = await fetch(download_url);
 
@@ -49,13 +56,18 @@ async function run_batch_process() {
 }
 
 // --- スケジュール設定 ---
-// '0 8 * * *' は「毎日 朝8時0分」を意味するcron形式のスケジュール(分　時　日　月　曜日)
-console.log('バッチ処理のスケジュールを設定しました。毎日AM9:30に実行されます...');
-cron.schedule('30 9 * * *', () => {
-  console.log('スケジュールされたタスクを実行します...');
-  run_batch_process();
+console.log(`バッチ処理のスケジュールを設定しました。${SCHEDULE}に実行されます...`);
+cron.schedule(CRON_SCHEDULE_1, () => {
+    console.log('スケジュールされたタスクを実行します...');
+    run_batch_process();
 }, {
-  timezone: "Asia/Tokyo" // タイムゾーンを日本時間に設定
+    timezone: TIME_ZONE 
+});
+cron.schedule(CRON_SCHEDULE_2, () => {
+    console.log('スケジュールされたタスクを実行します...');
+    run_batch_process();
+}, {
+    timezone: TIME_ZONE 
 });
 
 // プログラムを手動で実行する場合は、下記のコメントアウトを外す
