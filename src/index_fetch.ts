@@ -5,7 +5,7 @@ import { parse_and_filter_data } from './parser'; //Excel解析の結果を呼�
 import { upsert_data_and_clean_up } from './spanner';  //データベース接続のツール(spanner.ts)
 
 // ---設定値---
-const CRON_SCHEDULE = '*/1 * * * *'; // '30 9 * * *' は「毎日 朝9時30分」を意味するcron形式のスケジュール(分　時　日　月　曜日)
+const CRON_SCHEDULE = '*/1 * * * *'; // cron形式のスケジュール(分　時　日　月　曜日)
 const SCHEDULE = '1分ごと';
 const TIME_ZONE = 'Asia/Tokyo'; //日本時間に設定
 const BASE_URL = 'https://www.mhlw.go.jp/content/10800000/';
