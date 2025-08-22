@@ -6,18 +6,16 @@ const projectId = 'test-project';
 const instanceId = 'test-instance';
 const databaseId = 'test-database';
 const TABLE_NAME = 'MedicineShippingConditions'; //テーブル名を指定
-// --------------------------------
-
-// Spannerクライアントを初期化
-const spanner = new Spanner({ projectId });
-const instance = spanner.instance(instanceId);
-const database = instance.database(databaseId);
-
 /**
  * 解析済みデータをSpannerに投入し、古いデータを削除する（洗い替え処理）
  * @param products 解析済みの製品データ配列 (parser.tsからの出力)
  */
 export async function upsert_data_and_clean_up(products: any[]): Promise<void> {
+  // Spannerクライアントを初期化(内側で行うことで、2回目以降の実行もdatabaseにあくせすできる)
+  const spanner = new Spanner({ projectId });
+  const instance = spanner.instance(instanceId);
+  const database = instance.database(databaseId);
+  const product_table = database.table(TABLE_NAME);
   // 1. 処理の開始時刻を一度だけ取得し、変数に保存する
   const execution_time = new Date();
   console.log(`[SPANNAR] 処理タイムスタンプ: ${execution_time.toISOString()}`);
@@ -28,7 +26,6 @@ export async function upsert_data_and_clean_up(products: any[]): Promise<void> {
   }));
   
   // 3. データをSpannerに投入する
-  const product_table = database.table(TABLE_NAME);
   try {
     console.log(`[SPANNAR] ${records_to_insert.length}件のデータを投入します...`);
     // Spannerは一度に大量のデータを投入できるので、配列をそのまま渡す

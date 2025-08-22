@@ -1,0 +1,37 @@
+1.SpannerEmulatorを起動する
+新しいターミナルで下記のコマンドを実行する
+docker run -p 9010:9010 -p 9020:9020 gcr.io/cloud-spanner-emulator/emulator
+※このターミナルは閉じずにそのままにしておく。
+
+2.インスタンスとデータベースを再作成する
+新しいターミナルで下記のコマンドを実行する
+2_1.gcloudの設定をEmulatorに向ける
+gcloud config configurations activate emulator
+2_2.インスタンスを再作成する
+gcloud spanner instances create test-instance --config=emulator-config --description="Test Instance" --nodes=1
+2_3.データベースを再作成する
+gcloud spanner databases create test-database --instance=test-instance
+
+3.テーブルを作成する(2と同じターミナルでOK)
+3_1.Emulatorの接続先を教える
+$env:SPANNER_EMULATOR_HOST="localhost:9010"
+3_2.schema.sqlを使ってテーブルを作成する
+(schema.sqlがあるディレクトリで実行する)
+spanner-cli -p test-project -i test-instance -d test-database -f schema.sql
+
+--------------これでデータベースの立ち上げは完了-------------------------------
+
+4.プログラムの実行
+プログラムがあるディレクトリで下記のコマンドを実行する
+npx ts-node src/index_fetch.ts
+
+5.プログラムの停止
+Ctrl＋Cを行った後に、下記のコマンドを実行
+5_1.動いているnode.exeのIDを調べる
+tasklist | findstr "node"
+上記を実行すると、下記の内容が表示される。
+node.exe                     ***** Console                    1     30,120 K
+node.exe                     ***** Console                    1     25,888 K
+*****がIDとなる。
+5_2.対象のnode.exeをIDで指定し、強制的に停止させる
+taskkill /F /PID *****
