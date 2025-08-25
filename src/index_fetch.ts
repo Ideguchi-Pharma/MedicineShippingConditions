@@ -1,14 +1,17 @@
 import { Readable } from 'stream'; //巨大なデータを効率的に扱うための仕組み
 import fetch from 'node-fetch'; //ファイルをダウンロードする
 import cron from 'node-cron'; //プログラムの実行スケジュールを指定する
+import Holidays from 'japanese-holidays'; //土日、祝日、振替休日、国民の休日のデータを参照する
 import { parse_and_filter_data } from './parser'; //Excel解析の結果を呼び出す(parser.ts)
 import { upsert_data_and_clean_up } from './spanner';  //データベース接続のツール(spanner.ts)
+import dotenv from 'dotenv';
+dotenv.config(); //envファイルを読み込む
 
-// ---設定値---
-const CRON_SCHEDULE = '*/1 * * * *'; // cron形式のスケジュール(分　時　日　月　曜日)
-const SCHEDULE = '1分ごと';
-const TIME_ZONE = 'Asia/Tokyo'; //日本時間に設定
-const BASE_URL = 'https://www.mhlw.go.jp/content/10800000/';
+// ---設定値--- (.envから読み込むが、エラーが起きたときのために規定値を下記で設定)
+const CRON_SCHEDULE = process.env.CRON_SCHEDULE || '*/5 * * * *';
+const SCHEDULE = process.env.SCHEDULE || '毎日5分おきに';
+const TIME_ZONE = process.env.TIME_ZONE || 'Asia/Tokyo'; 
+const BASE_URL = process.env.BASE_URL || 'https://www.mhlw.go.jp/content/10800000/';
 
 // --- メイン処理 ---
 async function run_batch_process() {
@@ -16,15 +19,25 @@ async function run_batch_process() {
 
   try {
     // --- STEP 1: ファイルの読み込み ---
-    const today = new Date(); //現在の日付データを読み込む
-    today.setDate(today.getDate() - 1); //1日前のデータが更新されるため、取得した日付オブジェクトを1日戻す
-    const year = today.getFullYear().toString().slice(-2); //2025から下2桁を取り出す
-    const month = (today.getMonth() + 1.).toString().padStart(2, '0'); //0から始まるため、+1、
-    const day = today.getDate().toString().padStart(2, '0'); //Dateが1桁の場合、先頭に0を追加
+    const target_date = new Date(); //現在の日付データを読み込む
+    console.log('[MAIN]前営業日の日付を計算します...');
+
+    target_date.setDate(target_date.getDate() - 1); //1.取得した日付オブジェクトを1日戻す
+    while (
+      target_date.getDay() === 0 || //日曜日
+      target_date.getDay() === 6 || //土曜日
+      Holidays.isHoliday(target_date) //日本の祝日かどうかをライブラリが判定
+    ) {
+      target_date.setDate(target_date.getDate() - 1); //2.上記3つの条件が全てfalseになるまで1日戻す(ループ) これで前平日の日付の取得に成功。
+    }
+
+    const year = target_date.getFullYear().toString().slice(-2); //2025から下2桁を取り出す
+    const month = (target_date.getMonth() + 1.).toString().padStart(2, '0'); //0から始まるため、+1、
+    const day = target_date.getDate().toString().padStart(2, '0'); //Dateが1桁の場合、先頭に0を追加
 
     const file_name = `${year}${month}${day}iyakuhinkyoukyu.xlsx` //動的なExcelファイル名を指定
     const download_url = `${BASE_URL}${file_name}`; // プロジェクトルートのExcelファイルを指定
-    console.log(`[MAIN] ファイルをダウンロードします: ${download_url}`);
+    console.log(`[MAIN] 20${year}年${month}月${day}日時点のファイルをダウンロードします: ${download_url}`);
 
     let response;
     try {
@@ -77,6 +90,3 @@ cron.schedule(CRON_SCHEDULE, () => {
 
 // プログラムを手動で実行する場合は、下記のコメントアウトを外す。スケジュール機能を使用する場合は、必ずコメントアウトする。
 //run_batch_process();
-
-//fetchが失敗した時のログを詳細にする（ファイルが見つからない、ネットワーク不良など）
-//

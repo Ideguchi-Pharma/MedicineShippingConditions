@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@types/japanese-holidays": "^1.0.3",
     "@types/node": "^24.3.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
@@ -17,6 +18,8 @@
   },
   "dependencies": {
     "@google-cloud/spanner": "^8.1.0",
+    "dotenv": "^17.2.1",
+    "japanese-holidays": "^1.0.10",
     "node-cron": "^4.2.1",
     "node-fetch": "^3.3.2",
     "xlsx": "^0.18.5"

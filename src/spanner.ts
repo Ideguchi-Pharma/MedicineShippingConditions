@@ -1,11 +1,12 @@
 import { Spanner } from '@google-cloud/spanner';
+import dotenv from 'dotenv';
+dotenv.config(); //envファイルを読み込む
 
 // --- エミュレータ用に設定 ---
-// ※本番環境に切り替える際は、ここの値を本物の値に書き換えます
-const projectId = 'test-project';
-const instanceId = 'test-instance';
-const databaseId = 'test-database';
-const TABLE_NAME = 'MedicineShippingConditions'; //テーブル名を指定
+const projectId = process.env.SPANNER_PROJECT_ID || 'test-project';
+const instanceId = process.env.SPANNER_INSTANCE_ID || 'test-instance';
+const databaseId = process.env.SPANNER_DATABASE_ID || 'test-database';
+const TABLE_NAME = process.env.SPANNER_TABLE_NAME || 'MedicineShippingConditions'; 
 /**
  * 解析済みデータをSpannerに投入し、古いデータを削除する（洗い替え処理）
  * @param products 解析済みの製品データ配列 (parser.tsからの出力)
