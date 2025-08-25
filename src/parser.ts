@@ -26,7 +26,7 @@ interface medicine {
   is_new: string | null;
 }
 
-function translate_row_to_medicine(row: any): Omit<medicine, 'updated_at'> {
+export function translate_row_to_medicine(row: any): Omit<medicine, 'updated_at'> { //テスト対象
     return {
       drug_category: row['①薬剤区分'],
       therapeutic_category: row['②薬効分類\r\n（保険薬収載時点の薬効分類を記載）'],
@@ -58,7 +58,7 @@ function translate_row_to_medicine(row: any): Omit<medicine, 'updated_at'> {
  * @param dateStr 変換したい文字列
  * @returns Dateオブジェクト、または null
  */
-function parse_date_or_null(dateStr: any): string | null { 
+export function parse_date_or_null(dateStr: any): string | null { //テスト対象
     if (!dateStr) return null; //空だった場合、nullを返す
     const str = String(dateStr).trim(); //文字列かどうかのチェックと前後の空白があれば削除
     if (["未定", "-", "薬価基準未収載"].includes(str) || str === '') {
@@ -79,7 +79,7 @@ function parse_date_or_null(dateStr: any): string | null {
  * ReadableStreamをBufferに変換するヘルパー関数
  * @param stream 入力ストリーム
  */
-async function stream_to_buffer(stream: Readable): Promise<Buffer> { //async=非同期で行う。(この関数を呼び出すときにawaitを使うことができる。)　扱うデータはstreamでReadable型を指定。Buffer型のデータを渡すことを約束し、後から渡している。(この関数の処理待ちでプログラムが止まらないようにするため)
+export async function stream_to_buffer(stream: Readable): Promise<Buffer> { //async=非同期で行う。(この関数を呼び出すときにawaitを使うことができる。)　扱うデータはstreamでReadable型を指定。Buffer型のデータを渡すことを約束し、後から渡している。(この関数の処理待ちでプログラムが止まらないようにするため)
   const chunks: Buffer[] = []; //chunksという空の配列の箱を用意　Bufferはデータのかけらを扱うための特別な箱
   for await (const chunk of stream) { //for文　streamにデータが届くたびに手に取る
     chunks.push(chunk instanceof Buffer ? chunk : Buffer.from(chunk)); //手に取ったデータをchunksに追加していく。for文のため、データが届かなくなるまで実行する。
@@ -91,7 +91,7 @@ async function stream_to_buffer(stream: Readable): Promise<Buffer> { //async=非
  * @param stream 入力となるファイルのReadableStream
  * @returns DB投入可能なオブジェクトの配列
  */
-export async function parse_and_filter_data(stream: Readable): Promise<Omit<medicine, 'updated_at'>[]> {
+export async function parse_and_filter_data(stream: Readable): Promise<Omit<medicine, 'updated_at'>[]> { //テスト対象
   const buffer = await stream_to_buffer(stream); //ファイルをひとまとめにしてbufferに格納（前述）
   const workbook = xlsx.read(buffer, { type: 'buffer', cellDates: true }); //bufferに入っているデータをExcelファイルとして認識させる
   const sheetName = workbook.SheetNames[0]; //1シート目を指定
