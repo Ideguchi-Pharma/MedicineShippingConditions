@@ -4,6 +4,8 @@ import cron from 'node-cron'; //プログラムの実行スケジュールを指
 import Holidays from 'japanese-holidays'; //土日、祝日、振替休日、国民の休日のデータを参照する
 import { parse_and_filter_data } from './parser'; //Excel解析の結果を呼び出す(parser.ts)
 import { upsert_data_and_clean_up } from './spanner';  //データベース接続のツール(spanner.ts)
+import { logger, status_logger } from './logger'; //ログを記録するツール(logger.ts)
+
 import dotenv from 'dotenv';
 dotenv.config(); //envファイルを読み込む
 
@@ -15,12 +17,11 @@ const BASE_URL = process.env.BASE_URL || 'https://www.mhlw.go.jp/content/1080000
 
 // --- メイン処理 ---
 async function run_batch_process() {
-  console.log(`--- ${new Date().toLocaleString()} バッチ処理を開始します ---`);
-
+  logger.info(`--- ${new Date().toLocaleString()} バッチ処理を開始します ---`);
   try {
     // --- STEP 1: ファイルの読み込み ---
     const target_date = new Date(); //現在の日付データを読み込む
-    console.log('[MAIN]前営業日の日付を計算します...');
+    logger.info('[MAIN]前営業日の日付を計算します...');
 
     target_date.setDate(target_date.getDate() - 1); //1.取得した日付オブジェクトを1日戻す
     while (
@@ -37,7 +38,7 @@ async function run_batch_process() {
 
     const file_name = `${year}${month}${day}iyakuhinkyoukyu.xlsx` //動的なExcelファイル名を指定
     const download_url = `${BASE_URL}${file_name}`; // プロジェクトルートのExcelファイルを指定
-    console.log(`[MAIN] 20${year}年${month}月${day}日時点のファイルをダウンロードします: ${download_url}`);
+    logger.info(`[MAIN] 20${year}年${month}月${day}日時点のファイルをダウンロードします: ${download_url}`);
 
     let response;
     try {
@@ -59,30 +60,40 @@ async function run_batch_process() {
     const stream =response.body as Readable; //responseからbodyを取り出し、Readable型としてstreamに保存する
     
     // --- STEP 2: データの解析とフィルタリング ---
-    console.log('[MAIN] ファイルの解析を開始します...');
+    logger.info('[MAIN] ファイルの解析を開始します...');
     const products = await parse_and_filter_data(stream); //parser.tsへstreamに入っているデータを渡して解析・フィルタリング処理を依頼。この処理が完了してデータが返されるまで、index.tsの動きはストップ
-    console.log(`[MAIN] 解析完了。処理対象データ: ${products.length}件`);
+    logger.info(`[MAIN] 解析完了。処理対象データ: ${products.length}件`);
 
     // --- STEP 3: Spannerへの投入とクリーンアップ ---
     if (products.length > 0) {
-      console.log('[MAIN] Spannerへのデータ投入処理を開始します...'); 
+      logger.info('[MAIN] Spannerへのデータ投入処理を開始します...'); 
       await upsert_data_and_clean_up(products); //spanner.tsに、parser.tsで処理が完了したデータを渡して、データベースの洗い替えを依頼。この処理が完了するまでindex.tsの動きはストップ
     } else {
-      console.log('[MAIN] 処理対象データが0件のため、Spannerへの投入はスキップします。');
+      logger.info('[MAIN] 処理対象データが0件のため、Spannerへの投入はスキップします。');
     } 
 
+    status_logger.info('SUCCESS');
+
   } catch (error) {
-    console.error('[MAIN] バッチ処理中に致命的なエラーが発生しました:', error);
-    //process.exit(1); スケジュール実行の場合、プロセスは終了させずにエラーを記録する
+    if (error instanceof Error) { // まず、errorが本当にErrorオブジェクトかを確認する
+      // もしErrorオブジェクトなら、安全にプロパティにアクセスできる
+      logger.error(`[MAIN] バッチ処理中に致命的なエラーが発生しました: ${error.stack}`);
+      status_logger.error(`FAILURE: ${error.message}`);
+    } else {
+      // もしErrorオブジェクト以外（文字列など）が投げられた場合
+      const error_message = String(error);
+      logger.error(`[MAIN] バッチ処理中に予期せぬエラーが発生しました: ${error_message}`);
+      status_logger.error(`FAILURE: ${error_message}`);
+    }
   }
 
-  console.log(`--- ${new Date().toLocaleString()} バッチ処理が正常に完了しました ---`);
+  logger.info(`--- ${new Date().toLocaleString()} バッチ処理が正常に完了しました ---`);
 }
 
 // --- スケジュール設定 ---
-console.log(`バッチ処理のスケジュールを設定しました。${SCHEDULE}に実行されます...`);
+logger.info(`バッチ処理のスケジュールを設定しました。${SCHEDULE}に実行されます...`);
 cron.schedule(CRON_SCHEDULE, () => {
-    console.log('スケジュールされたタスクを実行します...');
+  logger.info('スケジュールされたタスクを実行します...');
     run_batch_process();
 }, {
     timezone: TIME_ZONE 

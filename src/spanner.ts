@@ -1,5 +1,6 @@
 import { Spanner } from '@google-cloud/spanner';
-import dotenv from 'dotenv';
+import { logger } from './logger'; //ログを記録するツール(logger.ts)
+import dotenv from 'dotenv'; 
 dotenv.config(); //envファイルを読み込む
 
 // --- エミュレータ用に設定 ---
@@ -19,7 +20,7 @@ export async function upsert_data_and_clean_up(products: any[]): Promise<void> {
   const product_table = database.table(TABLE_NAME);
   // 1. 処理の開始時刻を一度だけ取得し、変数に保存する
   const execution_time = new Date();
-  console.log(`[SPANNAR] 処理タイムスタンプ: ${execution_time.toISOString()}`);
+  logger.info(`[SPANNAR] 処理タイムスタンプ: ${execution_time.toISOString()}`);
   // 2. 解析した全データに、取得した単一のタイムスタンプを`updated_at`として付与する
   const records_to_insert = products.map(p => ({
     ...p,
@@ -28,13 +29,13 @@ export async function upsert_data_and_clean_up(products: any[]): Promise<void> {
   
   // 3. データをSpannerに投入する
   try {
-    console.log(`[SPANNAR] ${records_to_insert.length}件のデータを投入します...`);
+    logger.info(`[SPANNAR] ${records_to_insert.length}件のデータを投入します...`);
     // Spannerは一度に大量のデータを投入できるので、配列をそのまま渡す
     await product_table.replace(records_to_insert); //replace:もし同じ主キー（YJコード）のデータがあれば新しいデータで丸ごと上書きし、なければ新規データとして追加する
-    console.log('[SPANNAR] データの投入が完了しました。');
+    logger.info('[SPANNAR] データの投入が完了しました。');
 
     // 4. 処理開始時のタイムスタンプより古いデータを削除する(万が一、古いデータが残っていた場合の処理)
-    console.log('[SPANNAR] 古いデータのクリーンアップを開始します...');
+    logger.info('[SPANNAR] 古いデータのクリーンアップを開始します...');
     const [row_count] = await database.runTransactionAsync(async (transaction) => { //runTransactionAsync:この一連の削除処理中にエラーが発生したら全ての削除処理をキャンセルする
       const affected_rows = await transaction.runUpdate({
         sql: `DELETE FROM MedicineShippingConditions WHERE updated_at < @execution_time`, //SQL命令文：replaceで投入したデータのupdate_atより古いデータをデータベースから削除すしてください
@@ -43,13 +44,13 @@ export async function upsert_data_and_clean_up(products: any[]): Promise<void> {
       await transaction.commit(); //最終的な実行ボタン
       return affected_rows; //削除した件数をrow_countに返す
     });
-    console.log(`[SPANNAR] ${row_count}件の古いデータを削除しました。`);
+    logger.info(`[SPANNAR] ${row_count}件の古いデータを削除しました。`);
 
   } catch (err) {
-    console.error('[SPANNAR] エラーが発生しました:', err);
+    logger.error('[SPANNAR] エラーが発生しました:', err);
   } finally {
     // 最後にDB接続を閉じる
     await database.close();
-    console.log('[SPANNAR] データベース接続を閉じました。');
+    logger.info('[SPANNAR] データベース接続を閉じました。');
   }
 }

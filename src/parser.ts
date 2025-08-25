@@ -1,5 +1,6 @@
 import { Readable } from 'stream';
 import * as xlsx from 'xlsx';
+import { logger } from './logger'; //ログを記録するツール(logger.ts)
 
 interface medicine {
   drug_category: string;
@@ -115,14 +116,14 @@ export async function parse_and_filter_data(stream: Readable): Promise<Omit<medi
 
   const removed_empty_row_count = initial_row_count - json_data.length; // 削除した空行の数を計算
   if (removed_empty_row_count > 0) {
-    console.log(`[PARSER] データが入力されていない空の行を ${removed_empty_row_count}件削除しました。`);
+    logger.info(`[PARSER] データが入力されていない空の行を ${removed_empty_row_count}件削除しました。`);
   } else {
-    console.log(`[PARSER] データが入力されていない空の行はありませんでした。`)
+    logger.info(`[PARSER] データが入力されていない空の行はありませんでした。`)
   }
 
   //※エラーが解消したため、コメントアウト
   //if (json_data.length > 0) {
-  //  console.log('Excelから読み込んだ最初の行のキー（ヘッダー名）:', Object.keys(json_data[0])); //ヘッダー名を全てコンソールに表示（全カラムが読み込まれているか確認するため）
+  //  logger.info('Excelから読み込んだ最初の行のキー（ヘッダー名）:', Object.keys(json_data[0])); //ヘッダー名を全てコンソールに表示（全カラムが読み込まれているか確認するため）
   //}
 
     const translated_medicines = json_data.map(translate_row_to_medicine);
@@ -135,9 +136,9 @@ export async function parse_and_filter_data(stream: Readable): Promise<Omit<medi
     const duplicate_count = yj_codes.length - unique_yj_code_count;
 
     if (duplicate_count > 0) { // ログに記録する
-        console.log(`[PARSER] 重複チェック: ${duplicate_count}件の重複したYJコードが見つかりました。(DB投入時に後着優先で上書きされます)`);
+      logger.info(`[PARSER] 重複チェック: ${duplicate_count}件の重複したYJコードが見つかりました。(DB投入時に後着優先で上書きされます)`);
     } else {
-        console.log(`[PARSER] 重複チェック:重複したYJコードはありませんでした。`)
+      logger.info(`[PARSER] 重複チェック:重複したYJコードはありませんでした。`)
     }
 
     const medicines =translated_medicines.filter(medicine => {
@@ -147,9 +148,9 @@ export async function parse_and_filter_data(stream: Readable): Promise<Omit<medi
 
     const excluded_count = translated_medicines.length - medicines.length;
     if (excluded_count > 0) {
-        console.log(`[PARSER] YJコードが空のため、${excluded_count}件のデータを除外しました。`) //除外した件数をコンソールに表示（削除される件数は2件のはずだが、完全な空白行183行も入っているため、185行と表示される）
+      logger.info(`[PARSER] YJコードが空のため、${excluded_count}件のデータを除外しました。`) //除外した件数をコンソールに表示（削除される件数は2件のはずだが、完全な空白行183行も入っているため、185行と表示される）
     } else {
-        console.log(`[PARSER] YJコードが空のデータはありませんでした。`)
+      logger.info(`[PARSER] YJコードが空のデータはありませんでした。`)
     }
 
   return medicines;
