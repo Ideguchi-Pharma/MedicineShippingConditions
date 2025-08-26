@@ -1,7 +1,0 @@
-2025-08-25 15:56:00 [ERROR]: [MAIN] バッチ処理中に致命的なエラーが発生しました: Error: ネットワークエラー: 指定されたホストが見つかりません。URLを確認してください。 (https://www.mhlw.go.jp/content/10800000/250822iyakuhinkyoukyu.xlsx)
-2025-08-25 16:27:00 [ERROR]: [MAIN] バッチ処理中に致命的なエラーが発生しました: Error: ネットワークエラー: 指定されたホストが見つかりません。URLを確認してください。 (https://www.mhlw.go.jp/content/10800000/250822iyakuhinkyoukyu.xlsx)
-    at run_batch_process (C:\Users\idegu\Documents\MedicineShippingConditions\src\index_fetch.ts:48:15)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
-2025-08-25 16:32:00 [ERROR]: [MAIN] バッチ処理中に致命的なエラーが発生しました: Error: ネットワークエラー: 指定されたホストが見つかりません。URLを確認してください。 (https://www.mhlw.go.jp/content/10800000/250822iyakuhinkyoukyu.xlsx)
-    at run_batch_process (C:\Users\idegu\Documents\MedicineShippingConditions\src\index_fetch.ts:48:15)
-    at processTicksAndRejections (node:internal/process/task_queues:105:5)
