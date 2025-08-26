@@ -19,7 +19,7 @@ CREATE TABLE MedicineShippingConditions (
     shipment_volume_improvement_date    STRING(MAX),          -- ⑱製造販売業者の「出荷量」の改善（増加）見込み時期
     shipment_volume_improvement_amount  STRING(MAX),          -- ⑲⑱を任意選択した場合の「出荷量」の改善（増加）見込み量
     other_info_update_date              DATE,                 -- ⑳当該品目の⑫以外の情報を更新した日
-    is_new                              STRING(MAX),          -- 　今回掲載時の更新有無
+    is_new                              STRING(MAX),          -- 今回掲載時の更新有無（更新有りの場合、Newと表示）
     -- 管理用項目
     updated_at                          TIMESTAMP NOT NULL 
 ) PRIMARY KEY (yj_code);

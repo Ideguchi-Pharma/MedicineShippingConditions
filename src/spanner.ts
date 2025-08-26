@@ -48,6 +48,7 @@ export async function upsert_data_and_clean_up(products: any[]): Promise<void> {
 
   } catch (err) {
     logger.error('[SPANNAR] エラーが発生しました:', err);
+    throw err; //エラーを再スローして、index_fetch.tsに失敗を伝える
   } finally {
     // 最後にDB接続を閉じる
     await database.close();
