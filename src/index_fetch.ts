@@ -10,8 +10,8 @@ import dotenv from 'dotenv';
 dotenv.config(); //envファイルを読み込む
 
 // ---設定値--- (.envから読み込むが、エラーが起きたときのために規定値を下記で設定)
-const CRON_SCHEDULE = process.env.CRON_SCHEDULE || '*/5 * * * *';
-const SCHEDULE = process.env.SCHEDULE || '毎日5分おきに';
+const CRON_SCHEDULE = process.env.CRON_SCHEDULE || '0 8-12 * * *';
+const SCHEDULE = process.env.SCHEDULE || '毎日8~12時の間で1時間おきに';
 const TIME_ZONE = process.env.TIME_ZONE || 'Asia/Tokyo'; 
 const BASE_URL = process.env.BASE_URL || 'https://www.mhlw.go.jp/content/10800000/';
 

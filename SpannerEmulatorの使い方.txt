@@ -72,3 +72,5 @@ WHERE [カラム名] = '[検索したい文字]' AND WHERE [カラム名] = '[�
  -複数条件でデータを取り出せる。
 WHERE [日付が記載されたカラム名] BETWEEN 'YYYY-MM-DD' AND 'YYYY-MM-DD'
  -期間を絞ってデータを取り出せる
+SELECT COUNT(*) FROM [データベース名]
+ -データベース内のデータ数を確認できる。

@@ -48,7 +48,7 @@ export function translate_row_to_medicine(row: any): Omit<medicine, 'updated_at'
       shipment_volume_improvement_date: row['⑱製造販売業者の「出荷量」の改善（増加）見込み時期'] || null,
       shipment_volume_improvement_amount: row['⑲⑱を任意選択した場合の「出荷量」の改善（増加）見込み量'] || null,
       other_info_update_date: parse_date_or_null(row['⑳当該品目の⑫以外の情報を更新した日']),
-      is_new: row['更新有無（更新有りの場合、Newと表示）'] || null,
+      is_new: row['今回掲載時の更新有無（更新有りの場合、Newと表示）'] || null,
     };
   }
 
@@ -123,7 +123,7 @@ export async function parse_and_filter_data(stream: Readable): Promise<Omit<medi
 
   //※エラーが解消したため、コメントアウト
   //if (json_data.length > 0) {
-  //  logger.info('Excelから読み込んだ最初の行のキー（ヘッダー名）:', Object.keys(json_data[0])); //ヘッダー名を全てコンソールに表示（全カラムが読み込まれているか確認するため）
+  //  logger.info(`Excelから読み込んだ最初の行のキー（ヘッダー名）: ${JSON.stringify(Object.keys(json_data[0]), null, 2)}`);
   //}
 
     const translated_medicines = json_data.map(translate_row_to_medicine);
